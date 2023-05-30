@@ -1,0 +1,11 @@
+# Python Default Ignore
+.env
+__pycache__/
+*.py[cod]
+.DS_Store
+*.so
+*.egg
+*.egg-info
+dist/
+build/
+.idea/
