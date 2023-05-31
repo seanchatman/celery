@@ -6,15 +6,23 @@ from celery import Celery
 from celery.utils.log import get_task_logger
 from datetime import datetime
 from dotenv import load_dotenv
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import imaplib
+import email
+from chat_agent import ChatAgent
+import html2text
 
 load_dotenv()
 
 
 app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_KEY', "super-secret")
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('POSTGRES_URI',
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLALCHEMY_DATABASE_URI',
                                                   "postgresql://postgres:postgres@localhost:5432/postgres")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
 
 db = SQLAlchemy(app)
 
@@ -22,27 +30,35 @@ celery = Celery('tasks', broker=os.getenv("CELERY_BROKER_URL"))
 logger = get_task_logger(__name__)
 
 
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
+
+
 @celery.task
 def add(x, y):
     logger.info(f'Adding {x} + {y}')
     return x + y
 
-
-@celery.task
-def save_utc_datetime():
-    with app.app_context():
-        new_entry = TimeModel(created_at=datetime.utcnow())
-        db.session.add(new_entry)
-        db.session.commit()
+#
+# class TimeModel(db.Model):
+#     id = db.Column(db.Integer, primary_key=True)
+#     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+#
+#
+# @celery.task
+# def save_utc_datetime():
+#     with app.app_context():
+#         new_entry = TimeModel(created_at=datetime.utcnow())
+#         db.session.add(new_entry)
+#         db.session.commit()
 
 @app.route("/")
 def hello_world():
-    save_utc_datetime.delay()
-    return render_template("index.html", title="Hello")
-
-class TimeModel(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    # save_utc_datetime.delay()
+    return render_template("main.html", title="Hello")
 
 
 @app.route('/add', methods=['POST'])
@@ -52,4 +68,70 @@ def add_inputs():
     add.delay(x, y)
     flash("Your addition job has been submitted.")
     return redirect('/')
+
+
+@app.route('/email', methods=['POST'])
+def check_email():
+    conn = imaplib.IMAP4_SSL('imap.gmail.com')
+    conn.login(os.getenv('MAIL_USERNAME'), os.getenv('MAIL_PASSWORD'))
+
+    # Get a list of all new messages
+    conn.select('INBOX')
+    typ, data = conn.search(None, 'UNSEEN')
+
+    # Iterate over all messages
+    try:
+        for num in data[0].split():
+            typ, data = conn.fetch(num, '(RFC822)')
+            msg = email.message_from_bytes(data[0][1])
+            subject = msg['Subject']
+            # Get the body of the email
+            body = html2text.html2text(str(msg.get_payload()[0]))
+
+            agent = ChatAgent(system_prompt="""You are a COB Update Feedback AGI that utilizes natural language 
+            processing and sentiment analysis to provide insightful feedback on end-of-day emails. Using 
+            machine learning algorithms and historical data, the AGI identifies potential issues that may 
+            impact employee morale, giving managers the opportunity to address concerns before they become 
+            larger issues. By analyzing the patterns and language used in COB reports, the AGI can provide 
+            targeted feedback to employees, identifying areas where more clarity is needed and offering 
+            actionable suggestions for improvement. With its ability to provide real-time feedback and 
+            analysis, the COB Update Feedback AGI is an invaluable tool for organizations looking to improve 
+            transparency, communication, and overall employee morale.""")
+
+            reply = agent.submit("Give recommendations on state of employee and if any mgr actions are needed:\n\n" + body)
+
+            send_email(subject, reply)
+            # send_email.delay(subject, reply)
+    except Exception as e:
+        return str(e)
+
+
+@celery.task
+def send_email(subject, body):
+    email_subject = subject
+    email_message = body
+
+    sender_email = os.getenv('MAIL_USERNAME')
+    sender_password = os.getenv('MAIL_PASSWORD')
+    receiver_email = os.getenv('TO')
+
+    message = MIMEMultipart()
+    message['From'] = os.getenv('MAIL_USERNAME')
+    message['To'] = os.getenv('TO')
+    message['Cc'] = os.getenv('CC')
+    message['Subject'] = email_subject
+    message.attach(MIMEText(email_message, 'plain'))
+
+    try:
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(sender_email, sender_password)
+        server.sendmail(sender_email, receiver_email, message.as_string())
+        server.quit()
+
+        flash("Your email has been sent.")
+        return redirect('/')
+    except Exception as e:
+        return str(e)
+
 
