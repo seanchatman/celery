@@ -28,7 +28,7 @@ def add(x, y):
 
 @app.task
 def check_email():
-    print("Checking email...")
+    logger.info("Checking email...")
     try:
         conn = imaplib.IMAP4_SSL('imap.gmail.com')
         conn.login(os.getenv('MAIL_USERNAME'), os.getenv('MAIL_PASSWORD'))
@@ -66,16 +66,15 @@ def check_email():
                                  body)
 
             agent.clear()
-            # send_email(subject, reply)
             send_email.delay(f"{subject} from {msg['From']}", reply)
     except Exception as e:
-        print(str(e))
+        logger.info(str(e))
         return str(e)
 
 
 @app.task
 def send_email(subject, body):
-    print("Sending email...", subject, body)
+    logger.info("Sending email...", subject, body)
     email_subject = subject
     email_message = body
 
@@ -97,12 +96,16 @@ def send_email(subject, body):
         server.sendmail(sender_email, receiver_email, message.as_string())
         server.quit()
 
-        flash("Your email has been sent.")
+        logger.info("Your email has been sent.")
         return redirect('/')
     except Exception as e:
-        print(str(e))
+        logger.info(str(e))
         return str(e)
 
+@app.task
+def hello_world():
+    logger.info('Hello World')
+    return 'Hello World'
 
 app.conf.beat_schedule = {
     'check-email-every-5-seconds': {
