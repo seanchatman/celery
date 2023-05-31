@@ -21,6 +21,8 @@ class ChatAgent:
             self.messages = []
         if self.system_prompt:
             self.messages.append(Message('system', self.system_prompt))
+        if self.auto_clear:
+            self.clear()
 
     def submit(self, content):
         if self.verbose:
@@ -41,6 +43,10 @@ class ChatAgent:
 
     def add_message(self, role, content):
         self.messages.append(Message(role, content))
+
+    def clear(self):
+        # clear the messages except the first which is the system prompt
+        self.messages = self.messages[:1]
 
     def generate_response(self):
         messages = [m.serialize() for m in self.messages]

@@ -14,7 +14,10 @@ import email
 from chat_agent import ChatAgent
 import html2text
 
-load_dotenv(dotenv_path='/etc/secrets/.env')
+if os.path.exists('/etc/secrets/.env'):
+    load_dotenv(dotenv_path='/etc/secrets/.env')
+else:
+    load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_KEY', "super-secret")
@@ -89,6 +92,9 @@ def check_email():
             # Get the body of the email
             body = html2text.html2text(str(msg.get_payload()[0]))
 
+            # Only take the first 2000 characters
+            body = body[:2000]
+
             agent = ChatAgent(system_prompt="""You are a COB Update Feedback AGI that utilizes natural language 
             processing and sentiment analysis to provide insightful feedback on end-of-day emails. Using 
             machine learning algorithms and historical data, the AGI identifies potential issues that may 
@@ -99,10 +105,11 @@ def check_email():
             analysis, the COB Update Feedback AGI is an invaluable tool for organizations looking to improve 
             transparency, communication, and overall employee morale.""")
 
-            reply = agent.submit("Give recommendations on state of employee and if any mgr actions are needed:\n\n" +
+            reply = agent.submit("Give recommendations on state of employee and if any mgr actions are needed "
+                                 "from just the following email:\n\n" +
                                  body)
 
-            print(reply)
+            agent.clear()
             send_email(subject, reply)
             # send_email.delay(subject, reply)
     except Exception as e:
