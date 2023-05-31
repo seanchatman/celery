@@ -72,6 +72,7 @@ def add_inputs():
 
 @app.route('/email', methods=['POST'])
 def check_email():
+    print("Checking email...")
     conn = imaplib.IMAP4_SSL('imap.gmail.com')
     conn.login(os.getenv('MAIL_USERNAME'), os.getenv('MAIL_PASSWORD'))
 
@@ -98,16 +99,20 @@ def check_email():
             analysis, the COB Update Feedback AGI is an invaluable tool for organizations looking to improve 
             transparency, communication, and overall employee morale.""")
 
-            reply = agent.submit("Give recommendations on state of employee and if any mgr actions are needed:\n\n" + body)
+            reply = agent.submit("Give recommendations on state of employee and if any mgr actions are needed:\n\n" +
+                                 body)
 
+            print(reply)
             send_email(subject, reply)
             # send_email.delay(subject, reply)
     except Exception as e:
+        print(str(e))
         return str(e)
 
 
 @celery.task
 def send_email(subject, body):
+    print("Sending email...", subject, body)
     email_subject = subject
     email_message = body
 
@@ -132,6 +137,7 @@ def send_email(subject, body):
         flash("Your email has been sent.")
         return redirect('/')
     except Exception as e:
+        print(str(e))
         return str(e)
 
 
