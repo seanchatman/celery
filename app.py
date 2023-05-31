@@ -13,6 +13,7 @@ import imaplib
 import email
 from chat_agent import ChatAgent
 import html2text
+from celery.schedules import crontab
 
 if os.path.exists('/etc/secrets/.env'):
     load_dotenv(dotenv_path='/etc/secrets/.env')
@@ -72,7 +73,8 @@ def add_inputs():
     return redirect('/')
 
 
-@app.route('/email', methods=['POST'])
+# @app.route('/email', methods=['POST'])
+@celery.task
 def check_email():
     print("Checking email...")
     try:
@@ -83,7 +85,7 @@ def check_email():
         conn.select('INBOX')
         typ, data = conn.search(None, 'UNSEEN')
 
-    # Iterate over all messages
+        # Iterate over all messages
 
         for num in data[0].split():
             typ, data = conn.fetch(num, '(RFC822)')
@@ -106,12 +108,14 @@ def check_email():
             transparency, communication, and overall employee morale.""")
 
             reply = agent.submit("Give recommendations on state of employee and if any mgr actions are needed "
-                                 "from just the following email:\n\n" +
+                                 "based on the information provided. Give direct actionable answers. "
+                                 "Response should be elegantly formatted with bullet points. "
+                                 ":\n\n" +
                                  body)
 
             agent.clear()
-            send_email(subject, reply)
-            # send_email.delay(subject, reply)
+            # send_email(subject, reply)
+            send_email.delay(f"{subject} from {msg['From']}", reply)
     except Exception as e:
         print(str(e))
         return str(e)
@@ -148,3 +152,9 @@ def send_email(subject, body):
         return str(e)
 
 
+celery.conf.beat_schedule = {
+    'check-email-every-5-seconds': {
+        'task': 'app.check_email',
+        'schedule': crontab(minute='*/5')
+    },
+}
