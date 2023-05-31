@@ -153,12 +153,6 @@ celery.conf.beat_schedule = {
 #         db.session.add(new_entry)
 #         db.session.commit()
 
-@app.route("/")
-def hello_world():
-    # save_utc_datetime.delay()
-    return render_template("main.html", title="Hello")
-
-
 @app.route('/add', methods=['POST'])
 def add_inputs():
     x = int(request.form['x'] or 0)
