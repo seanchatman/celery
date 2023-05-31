@@ -131,12 +131,12 @@ def send_email(subject, body):
 
 celery.conf.beat_schedule = {
     'check-email-every-5-seconds': {
-        'task': 'celery.check_email',
-        'schedule': crontab(minute='*/5')
+        'task': 'app.check_email',
+        'schedule': crontab(minute='*/1')
     },
     'hello world': {
-        'task': 'celery.hello_world',
-        'schedule': crontab(minute='*/5')
+        'task': 'app.hello_world',
+        'schedule': crontab(minute='*/1')
     },
 }
 
