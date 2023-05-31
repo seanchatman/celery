@@ -1,4 +1,6 @@
 import os
+import time
+
 from celery import Celery
 from celery.utils.log import get_task_logger
 from flask import Flask, flash, render_template, redirect, request
@@ -60,25 +62,36 @@ def check_email():
                                  body)
 
             agent.clear()
-            send_email.delay(f"{subject} from {msg['From']}", reply)
+
+            send_email.delay(os.getenv('To'), f"{subject} from {msg['From']}", reply)
+
+            # Wait for 5 seconds to avoid rate limiting
+            time.sleep(5)
+
+            # os.getenv('CC') is a comma separated list of emails
+            if os.getenv('CC'):
+                cc = os.getenv('CC').split(',')
+                for addr in cc:
+                    # Wait for 5 seconds to avoid rate limiting
+                    time.sleep(5)
+                    send_email.delay(addr, f"{subject} from {msg['From']}", reply)
     except Exception as e:
         logger.info(str(e))
         return str(e)
 
 
 @app.task
-def send_email(subject, body):
+def send_email(to, subject, body):
     logger.info("Sending email...", subject, body)
     email_subject = subject
     email_message = body
 
     sender_email = os.getenv('MAIL_USERNAME')
     sender_password = os.getenv('MAIL_PASSWORD')
-    receiver_email = os.getenv('TO')
 
     message = MIMEMultipart()
     message['From'] = os.getenv('MAIL_USERNAME')
-    message['To'] = os.getenv('TO')
+    message['To'] = to
     message['Subject'] = email_subject
     message.attach(MIMEText(email_message, 'plain'))
     server = smtplib.SMTP('smtp.gmail.com', 587)
@@ -86,24 +99,13 @@ def send_email(subject, body):
     try:
         server.starttls()
         server.login(sender_email, sender_password)
-        logger.info("Sending email to: ", receiver_email)
-        server.sendmail(sender_email, receiver_email, message.as_string())
-
-        # os.getenv('CC') is a comma separated list of emails
-        if os.getenv('CC'):
-            cc = os.getenv('CC').split(',')
-            for addr in cc:
-                message['To'] = addr
-                logger.info("Sending email to: ", addr)
-                server.sendmail(sender_email, addr, message.as_string())
-
+        logger.info("Sending email to", to)
+        server.sendmail(sender_email, to, message.as_string())
         server.quit()
         return "Your email(s) have been sent."
     except Exception as e:
         logger.info(str(e))
         return str(e)
-    finally:
-        server.quit()
 
 
 app.conf.beat_schedule = {
