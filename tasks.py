@@ -22,11 +22,6 @@ else:
     load_dotenv()
 
 @app.task
-def add(x, y):
-    logger.info(f'Adding {x} + {y}')
-    return x + y
-
-@app.task
 def check_email():
     logger.info("Checking email...")
     try:
@@ -38,7 +33,6 @@ def check_email():
         typ, data = conn.search(None, 'UNSEEN')
 
         # Iterate over all messages
-
         for num in data[0].split():
             typ, data = conn.fetch(num, '(RFC822)')
             msg = email.message_from_bytes(data[0][1])
@@ -87,11 +81,12 @@ def send_email(subject, body):
     message['To'] = os.getenv('TO')
     message['Subject'] = email_subject
     message.attach(MIMEText(email_message, 'plain'))
+    server = smtplib.SMTP('smtp.gmail.com', 587)
 
     try:
-        server = smtplib.SMTP('smtp.gmail.com', 587)
         server.starttls()
         server.login(sender_email, sender_password)
+        logger.info("Sending email to: ", receiver_email)
         server.sendmail(sender_email, receiver_email, message.as_string())
 
         # os.getenv('CC') is a comma separated list of emails
@@ -99,6 +94,7 @@ def send_email(subject, body):
             cc = os.getenv('CC').split(',')
             for addr in cc:
                 message['To'] = addr
+                logger.info("Sending email to: ", addr)
                 server.sendmail(sender_email, addr, message.as_string())
 
         server.quit()
@@ -106,19 +102,13 @@ def send_email(subject, body):
     except Exception as e:
         logger.info(str(e))
         return str(e)
+    finally:
+        server.quit()
 
-@app.task
-def hello_world():
-    logger.info('Hello World')
-    return 'Hello World'
 
 app.conf.beat_schedule = {
     'check-email-every-5-seconds': {
         'task': 'tasks.check_email',
         'schedule': crontab(minute='*/1')
-    },
-    'hello-world': {
-        'task': 'task.hello_world',
-        'schedule': crontab(minute='*/1')
-    },
+    }
 }
