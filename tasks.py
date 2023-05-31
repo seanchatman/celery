@@ -109,11 +109,11 @@ def hello_world():
 
 app.conf.beat_schedule = {
     'check-email-every-5-seconds': {
-        'task': 'app.check_email',
+        'task': 'tasks.check_email',
         'schedule': crontab(minute='*/1')
     },
     'hello-world': {
-        'task': 'app.hello_world',
+        'task': 'task.hello_world',
         'schedule': crontab(minute='*/1')
     },
 }
