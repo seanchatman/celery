@@ -112,7 +112,7 @@ app.conf.beat_schedule = {
         'task': 'app.check_email',
         'schedule': crontab(minute='*/1')
     },
-    'hello world': {
+    'hello-world': {
         'task': 'app.hello_world',
         'schedule': crontab(minute='*/1')
     },
