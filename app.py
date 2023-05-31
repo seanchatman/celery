@@ -45,35 +45,12 @@ def add(x, y):
     logger.info(f'Adding {x} + {y}')
     return x + y
 
-#
-# class TimeModel(db.Model):
-#     id = db.Column(db.Integer, primary_key=True)
-#     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-#
-#
-# @celery.task
-# def save_utc_datetime():
-#     with app.app_context():
-#         new_entry = TimeModel(created_at=datetime.utcnow())
-#         db.session.add(new_entry)
-#         db.session.commit()
-
-@app.route("/")
+@celery.task
 def hello_world():
-    # save_utc_datetime.delay()
-    return render_template("main.html", title="Hello")
+    logger.info('Hello World')
+    return 'Hello World'
 
 
-@app.route('/add', methods=['POST'])
-def add_inputs():
-    x = int(request.form['x'] or 0)
-    y = int(request.form['y'] or 0)
-    add.delay(x, y)
-    flash("Your addition job has been submitted.")
-    return redirect('/')
-
-
-# @app.route('/email', methods=['POST'])
 @celery.task
 def check_email():
     print("Checking email...")
@@ -154,7 +131,38 @@ def send_email(subject, body):
 
 celery.conf.beat_schedule = {
     'check-email-every-5-seconds': {
-        'task': 'app.check_email',
+        'task': 'celery.check_email',
+        'schedule': crontab(minute='*/5')
+    },
+    'hello world': {
+        'task': 'celery.hello_world',
         'schedule': crontab(minute='*/5')
     },
 }
+
+#
+# class TimeModel(db.Model):
+#     id = db.Column(db.Integer, primary_key=True)
+#     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+#
+#
+# @celery.task
+# def save_utc_datetime():
+#     with app.app_context():
+#         new_entry = TimeModel(created_at=datetime.utcnow())
+#         db.session.add(new_entry)
+#         db.session.commit()
+
+@app.route("/")
+def hello_world():
+    # save_utc_datetime.delay()
+    return render_template("main.html", title="Hello")
+
+
+@app.route('/add', methods=['POST'])
+def add_inputs():
+    x = int(request.form['x'] or 0)
+    y = int(request.form['y'] or 0)
+    add.delay(x, y)
+    flash("Your addition job has been submitted.")
+    return redirect('/')
