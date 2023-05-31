@@ -14,8 +14,7 @@ import email
 from chat_agent import ChatAgent
 import html2text
 
-load_dotenv()
-
+load_dotenv(dotenv_path='/etc/secrets/.env')
 
 app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_KEY', "super-secret")
@@ -73,15 +72,16 @@ def add_inputs():
 @app.route('/email', methods=['POST'])
 def check_email():
     print("Checking email...")
-    conn = imaplib.IMAP4_SSL('imap.gmail.com')
-    conn.login(os.getenv('MAIL_USERNAME'), os.getenv('MAIL_PASSWORD'))
+    try:
+        conn = imaplib.IMAP4_SSL('imap.gmail.com')
+        conn.login(os.getenv('MAIL_USERNAME'), os.getenv('MAIL_PASSWORD'))
 
-    # Get a list of all new messages
-    conn.select('INBOX')
-    typ, data = conn.search(None, 'UNSEEN')
+        # Get a list of all new messages
+        conn.select('INBOX')
+        typ, data = conn.search(None, 'UNSEEN')
 
     # Iterate over all messages
-    try:
+
         for num in data[0].split():
             typ, data = conn.fetch(num, '(RFC822)')
             msg = email.message_from_bytes(data[0][1])
