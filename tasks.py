@@ -85,7 +85,6 @@ def send_email(subject, body):
     message = MIMEMultipart()
     message['From'] = os.getenv('MAIL_USERNAME')
     message['To'] = os.getenv('TO')
-    message['Cc'] = os.getenv('CC')
     message['Subject'] = email_subject
     message.attach(MIMEText(email_message, 'plain'))
 
@@ -94,10 +93,16 @@ def send_email(subject, body):
         server.starttls()
         server.login(sender_email, sender_password)
         server.sendmail(sender_email, receiver_email, message.as_string())
-        server.quit()
 
-        logger.info("Your email has been sent.")
-        return redirect('/')
+        # os.getenv('CC') is a comma separated list of emails
+        if os.getenv('CC'):
+            cc = os.getenv('CC').split(',')
+            for addr in cc:
+                message['To'] = addr
+                server.sendmail(sender_email, addr, message.as_string())
+
+        server.quit()
+        return "Your email(s) have been sent."
     except Exception as e:
         logger.info(str(e))
         return str(e)
