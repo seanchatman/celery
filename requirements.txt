@@ -37,3 +37,4 @@ Flask-SQLAlchemy==3.0.0
 Flask-Mail==0.9.1
 openai~=0.27.7
 html2text~=2020.1.16
+pytest~=7.3.1

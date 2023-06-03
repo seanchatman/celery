@@ -1,0 +1,3 @@
+id,email_addr,name,report_submitted
+alice@test.com,alice@test.com,Alice,False
+bob@test.com,bob@test.com,Bob,False

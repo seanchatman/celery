@@ -1,9 +1,10 @@
 import os
 import time
-
+import json
+import os
+from uuid import uuid4
 from celery import Celery
 from celery.utils.log import get_task_logger
-from flask import Flask, flash, render_template, redirect, request
 from celery import Celery
 from celery.utils.log import get_task_logger
 from dotenv import load_dotenv
@@ -25,8 +26,11 @@ else:
 
 @app.task
 def check_email():
-    logger.info("Checking email...")
+    logger.info("Checking mail...")
     try:
+        email_srv = EmailService()
+        emails = email_srv.get_todays_emails()
+
         conn = imaplib.IMAP4_SSL('imap.gmail.com')
         conn.login(os.getenv('MAIL_USERNAME'), os.getenv('MAIL_PASSWORD'))
 
@@ -39,7 +43,7 @@ def check_email():
             typ, data = conn.fetch(num, '(RFC822)')
             msg = email.message_from_bytes(data[0][1])
             subject = msg['Subject']
-            # Get the body of the email
+            # Get the body of the mail
             body = html2text.html2text(str(msg.get_payload()[0]))
 
             # Only take the first 2000 characters
@@ -57,8 +61,9 @@ def check_email():
 
             reply = agent.submit("Give recommendations on state of employee and if any mgr actions are needed "
                                  "based on the information provided. Give direct actionable answers. "
-                                 "Response should be elegantly formatted with bullet points. "
-                                 ":\n\n" +
+                                 "Response should be elegantly formatted with bullet points with the name of the"
+                                 "employee. "
+                                 "\n\n" +
                                  body)
 
             agent.clear()
@@ -82,7 +87,7 @@ def check_email():
 
 @app.task
 def send_email(to, subject, body):
-    logger.info("Sending email...", subject, body)
+    logger.info("Sending mail...", subject, body)
     email_subject = subject
     email_message = body
 
@@ -99,17 +104,17 @@ def send_email(to, subject, body):
     try:
         server.starttls()
         server.login(sender_email, sender_password)
-        logger.info("Sending email to", to)
+        logger.info("Sending mail to", to)
         server.sendmail(sender_email, to, message.as_string())
         server.quit()
-        return "Your email(s) have been sent."
+        return "Your mail(s) have been sent."
     except Exception as e:
         logger.info(str(e))
         return str(e)
 
 
 app.conf.beat_schedule = {
-    'check-email-every-5-seconds': {
+    'check-mail-every-5-seconds': {
         'task': 'tasks.check_email',
         'schedule': crontab(minute='*/1')
     }

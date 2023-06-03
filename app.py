@@ -53,7 +53,7 @@ def hello_world():
 
 @celery.task
 def check_email():
-    print("Checking email...")
+    print("Checking mail...")
     try:
         conn = imaplib.IMAP4_SSL('imap.gmail.com')
         conn.login(os.getenv('MAIL_USERNAME'), os.getenv('MAIL_PASSWORD'))
@@ -68,7 +68,7 @@ def check_email():
             typ, data = conn.fetch(num, '(RFC822)')
             msg = email.message_from_bytes(data[0][1])
             subject = msg['Subject']
-            # Get the body of the email
+            # Get the body of the mail
             body = html2text.html2text(str(msg.get_payload()[0]))
 
             # Only take the first 2000 characters
@@ -100,7 +100,7 @@ def check_email():
 
 @celery.task
 def send_email(subject, body):
-    print("Sending email...", subject, body)
+    print("Sending mail...", subject, body)
     email_subject = subject
     email_message = body
 
@@ -122,7 +122,7 @@ def send_email(subject, body):
         server.sendmail(sender_email, receiver_email, message.as_string())
         server.quit()
 
-        flash("Your email has been sent.")
+        flash("Your mail has been sent.")
         return redirect('/')
     except Exception as e:
         print(str(e))
@@ -130,7 +130,7 @@ def send_email(subject, body):
 
 
 celery.conf.beat_schedule = {
-    'check-email-every-5-seconds': {
+    'check-mail-every-5-seconds': {
         'task': 'app.check_email',
         'schedule': crontab(minute='*/1')
     },
