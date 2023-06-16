@@ -1,4 +1,3 @@
-"""WTF"""
 import os
 from flask import Flask, flash, render_template, redirect, request
 from flask_sqlalchemy import SQLAlchemy
@@ -14,6 +13,7 @@ import email
 from chat_agent import ChatAgent
 import html2text
 from celery.schedules import crontab
+from flask_cors import CORS
 
 if os.path.exists('/etc/secrets/.env'):
     load_dotenv(dotenv_path='/etc/secrets/.env')
@@ -39,8 +39,6 @@ app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
 
-from flask import Flask, send_from_directory
-from flask_cors import CORS
 
 app = Flask(__name__, static_folder='react-app/build')
 CORS(app)
