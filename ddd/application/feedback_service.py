@@ -1,5 +1,12 @@
+import logging
+
 from chat_agent import ChatAgent
-from ddd.domain import Feedback, Email
+from ddd.domain.feedback import Feedback
+from ddd.domain.email import Email
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 FEEDBACK_AGENT_PROMPT = """You are a COB Update Feedback AGI that utilizes natural language 
             processing and sentiment analysis to provide insightful feedback on end-of-day emails. Using 
@@ -18,6 +25,7 @@ class FeedbackService:
         self.agent = ChatAgent(system_prompt=FEEDBACK_AGENT_PROMPT)
 
     def gen_feedback(self, text: str) -> Feedback:
+        logger.info(f"Generating feedback")
         reply = self.agent.submit("Give recommendations on state of employee and if any mgr actions are needed "
                                   "based on the information provided. Give direct actionable answers. Add <<RED_FLAG>> "
                                   "if there is an issue that could possibly need manager intervention. "

@@ -84,7 +84,7 @@ import pytest
 from unittest.mock import Mock, patch
 
 from ddd.infrastructure.email_service import EmailService
-from ddd.domain import Email
+from ddd.domain.email import Email
 
 
 class TestEmailService:

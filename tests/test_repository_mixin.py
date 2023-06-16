@@ -2,9 +2,9 @@ import tempfile
 import os
 import pytest
 
-from ddd.infrastructure import FileDatabase
+from ddd.infrastructure.file_database import FileDatabase
 
-from ddd.domain import Employee
+from ddd.domain.employee import Employee
 from ddd.infrastructure.repositories import RepositoryMixin
 
 alice = {'id': 'alice@test.com', 'email_addr': 'alice@test.com', 'name': 'Alice'}
@@ -19,7 +19,7 @@ class TestRepositoryMixin:
     def db(self):
         temp_dir = tempfile.TemporaryDirectory()
         db_path = os.path.join(temp_dir.name, 'test_db.csv')
-        db = FileDatabase(db_path, Employee)
+        db = FileDatabase(Employee)
         yield db
         temp_dir.cleanup()
 

@@ -1,4 +1,3 @@
-import csv
 import imaplib
 import smtplib
 from datetime import datetime, timedelta
@@ -6,9 +5,11 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import os
 import email
-import html2text
 
-from ddd.domain import Report, Employee, Email, Feedback
+from ddd.domain.report import Report
+from ddd.domain.email import Email
+from ddd.domain.employee import Employee
+
 
 class EmailService:
     _instance = None
@@ -47,6 +48,7 @@ class EmailService:
         # Search for all emails received today
         now = datetime.now()
         since = (now - timedelta(days=1)).strftime('%d-%b-%Y')
+        # since = (now - timedelta(days=1)).strftime('%d-%b-%Y')
         before = now.strftime('%d-%b-%Y')
 
         _, data = self.conn.search(None, 'SINCE', since, 'BEFORE', before)

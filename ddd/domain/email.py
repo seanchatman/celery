@@ -1,42 +1,16 @@
-# domain.py
 import os
+from dataclasses import dataclass
+from email.message import Message
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
 import html2text
 
-from dataclasses import dataclass
-from datetime import datetime
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from email.message import Message
-
-@dataclass
-class Employee:
-    id: str = ""
-    email_addr: str = ""
-    name: str = ""
-    report_submitted: str = "False"
-
-    def did_not_submit_report(self):
-        # This method checks if the employee did not submit a report
-        return self.report_submitted == "False"
+from ddd.domain.json_mixin import JsonMixin
 
 
 @dataclass
-class Feedback:
-    id: str = ""
-    name: str = ""
-    content: str = ""
-    created_at: str = ""
-
-    def __post_init__(self):
-        if not self.created_at:
-            self.created_at = datetime.utcnow().isoformat()
-
-    def has_red_flags(self) -> bool:
-        return "<<RED_FLAG>>" in self.content
-
-
-@dataclass
-class Email:
+class Email(JsonMixin):
     id: str = ""
     to: str = ""
     from_: str = ""
@@ -79,16 +53,6 @@ class Email:
             body = message.get_payload(decode=True).decode('utf-8')
         return html2text.html2text(body)
 
-
-@dataclass
-class Report:
-    id: str = ""
-    employee: Employee = None
-    feedback: Feedback = None
-    title: str = ""
-    content: str = ""
-    created_at: str = ""
-    
-    def __post_init__(self):
-        if not self.created_at:
-            self.created_at = datetime.utcnow().isoformat()
+    @property
+    def sender_name(self):
+        return self.from_.split(':')[0]

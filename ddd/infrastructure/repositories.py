@@ -1,4 +1,6 @@
-from ddd.domain import Report, Feedback, Employee
+from ddd.domain.report import Report
+from ddd.domain.feedback import Feedback
+from ddd.domain.employee import Employee
 from ddd.infrastructure.file_database import FileDatabase
 
 
@@ -20,6 +22,9 @@ class RepositoryMixin:
 
     def save_all(self, objs: list[object]) -> None:
         [self.save(obj) for obj in objs]
+
+    def update(self, obj) -> None:
+        self.db.update(obj)
 
 
 class ReportRepository(RepositoryMixin):

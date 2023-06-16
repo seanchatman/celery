@@ -5,7 +5,8 @@ import time
 from dotenv import load_dotenv
 
 from ddd.application.feedback_service import FeedbackService
-from ddd.domain import Employee, Email, Feedback
+from ddd.domain.email import Email
+from ddd.domain.feedback import Feedback
 from ddd.infrastructure.email_service import EmailService
 from jinja2 import Template
 
@@ -15,27 +16,19 @@ from ddd.infrastructure.repositories import EmployeeRepository, FeedbackReposito
 def _generate_email_content(employees_without_reports, feedback_with_red_flags):
     template = Template("""\
 Dear Manager,
-
 {% if employees_without_reports %}
 The following employees did not submit their reports today:
-
 {% for employee in employees_without_reports %}
 - {{ employee.email_addr }}
 {% endfor %}
-
 Please follow up with them to ensure they submit their reports in a timely manner.
-
 {% endif %}
-
 {% if feedback_with_red_flags %}
 Reports with Red Flags:
-
 {% for feedback in feedback_with_red_flags %}
 {{ feedback.content }}:
-
 {% endfor %}
 {% endif %}
-
 Please review these reports and take appropriate action as needed.
 
 Best regards,
@@ -53,9 +46,14 @@ class ReportProcessingService:
         return [FeedbackService().gen_feedback(email.body) for email in emails]
 
     def process_reports(self):
-        emps = EmployeeRepository().get_all()
-        employees_without_reports = [e for e in EmployeeRepository().get_all() if e.did_not_submit_report()]
+        for f in FeedbackRepository().get_all():
+            employee = EmployeeRepository().get(f.name)
+            employee.report_submitted = True
+            EmployeeRepository().save(employee)
+
+        employees_without_reports = [e for e in EmployeeRepository().get_all() if not e.report_submitted]
         feedback_with_red_flags = [fb for fb in FeedbackRepository().get_all() if fb.has_red_flags()]
+
 
         email_content = _generate_email_content(employees_without_reports, feedback_with_red_flags)
 

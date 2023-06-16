@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 from unittest.mock import MagicMock, patch
 
-from ddd.domain import Employee
+from ddd.domain.employee import Employee
 from ddd.infrastructure.file_database import FileDatabase
 
 alice = Employee(id='alice@test.com', email_addr='alice@test.com', name='Alice')

@@ -1,4 +1,5 @@
 # Python Default Ignore
+*.csv
 .env
 __pycache__/
 *.py[cod]
@@ -9,3 +10,6 @@ __pycache__/
 dist/
 build/
 .idea/
+
+# React app
+node_modules/

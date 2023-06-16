@@ -1,43 +1,54 @@
-import csv
 import os
+import json
 
+from ddd.domain.json_mixin import JsonMixin
 from ddd.utils import get_project_root
 
 
 class FileDatabase:
     def __init__(self, schema):
-        self.filename = os.path.join(get_project_root(), schema.__qualname__.lower() + ".csv")
+        self.filename = os.path.join(get_project_root(), schema.__qualname__.lower() + ".json")
         self.schema = schema
-        self.fieldnames = list(schema.__annotations__.keys())
+
         if not os.path.exists(self.filename):
-            with open(self.filename, 'w') as f:
-                writer = csv.writer(f)
-                writer.writerow(self.fieldnames)
+            with open(self.filename, "w") as f:
+                json.dump([], f)
 
     def get(self, id) -> dict | None:
-        with open(self.filename, 'r') as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                if row.get('id') == id:
-                    return row
+        with open(self.filename, "r") as f:
+            data = json.load(f)
+
+        for obj in data:
+            if obj["id"] == id:
+                return obj
+
         return None
 
-    def save(self, obj) -> None:
-        with open(self.filename, 'a') as f:
-            writer = csv.DictWriter(f, fieldnames=self.fieldnames)
-            if f.tell() == 0:
-                writer.writeheader()
-            writer.writerow(vars(obj))
+    def save(self, obj: JsonMixin) -> None:
+        with open(self.filename, "r") as f:
+            data = json.load(f)
+
+        for i, existing_obj in enumerate(data):
+            if existing_obj["id"] == obj.id:
+                data[i] = obj.to_dict()
+                break
+        else:
+            data.append(obj.to_dict())
+
+        with open(self.filename, "w") as fw:
+            json.dump(data, fw)
 
     def delete(self, id) -> None:
-        data = self.get_all()
-        data = [x for x in data if x.get('id') != id]
-        with open(self.filename, 'w') as f:
-            writer = csv.DictWriter(f, fieldnames=self.fieldnames)
-            writer.writeheader()
-            writer.writerows(data)
+        with open(self.filename, "r") as f:
+            data = json.load(f)
+
+        data = [obj for obj in data if obj.id != id]
+
+        with open(self.filename, "w") as f:
+            json.dump(data, f)
 
     def get_all(self) -> list[dict]:
-        with open(self.filename, 'r') as f:
-            reader = csv.DictReader(f)
-            return list(reader)
+        with open(self.filename, "r") as f:
+            data = json.load(f)
+
+        return data
