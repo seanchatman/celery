@@ -37,7 +37,8 @@ class Email(JsonMixin):
     def as_string(self):
         return self.to_mime_message().as_string()
 
-    def extract_body(cls, message):
+    @staticmethod
+    def extract_body(message):
         body = ""
         if message.is_multipart():
             for part in message.get_payload():
@@ -46,7 +47,7 @@ class Email(JsonMixin):
                     body = part.get_payload(decode=True).decode('utf-8')
                     break
                 elif content_type.startswith('multipart/'):
-                    body = cls.extract_body(part)
+                    body = Email.extract_body(part)
                     if body:
                         break
         else:

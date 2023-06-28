@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+from ddd.domain.email import Email
 from ddd.domain.report import Report
 from ddd.domain.feedback import Feedback
 from ddd.domain.employee import Employee
@@ -58,3 +61,14 @@ class EmployeeRepository(RepositoryMixin):
 
     def get_all(self) -> list[Employee]:
         return [Employee(**x) for x in super().get_all()]
+
+
+class EmailRepository(RepositoryMixin):
+    def __init__(self):
+        super().__init__(FileDatabase(Email))
+
+    def get(self, id) -> Email | None:
+        return Email(**super().get(id))
+
+    def get_all(self) -> list[Email]:
+        return [Email(**x) for x in super().get_all()]

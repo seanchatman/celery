@@ -1,8 +1,10 @@
+import json
 import logging
 
-from chat_agent import ChatAgent
+from ddd.chat_agent import ChatAgent
 from ddd.domain.feedback import Feedback
 from ddd.domain.email import Email
+from ddd.infrastructure.repositories import EmployeeRepository
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -18,30 +20,52 @@ FEEDBACK_AGENT_PROMPT = """You are a COB Update Feedback AGI that utilizes natur
             analysis, the COB Update Feedback AGI is an invaluable tool for organizations looking to improve 
             transparency, communication, and overall employee morale."""
 
+function_schema = {
+    "name": "generate_feedback",
+    "description": "Identify any red flag issues like poor performance, missing meetings, letting go employees that "
+                   "impact the business, giving managers the action items to address red flag concerns "
+                   "before they become larger issues. Err on the side of too many red flag issues. It is critical"
+                   "that red flags be identified and addressed immediately with 3 remedial action items.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "has_red_flag": {"type": "boolean"},
+            "action_items": {"type": "array", "items": {"type": "string"}},
+        },
+        "required": ["has_red_flag", "action_items"],
+    }
+}
 
 class FeedbackService:
 
     def __init__(self):
-        self.agent = ChatAgent(system_prompt=FEEDBACK_AGENT_PROMPT)
+        self.agent = ChatAgent(system_prompt=FEEDBACK_AGENT_PROMPT, function_schemas=[function_schema])
 
-    def gen_feedback(self, text: str) -> Feedback:
-        logger.info(f"Generating feedback")
-        reply = self.agent.submit("Give recommendations on state of employee and if any mgr actions are needed "
-                                  "based on the information provided. Give direct actionable answers. Add <<RED_FLAG>> "
-                                  "if there is an issue that could possibly need manager intervention. "
-                                  "Response should be elegantly formatted with 3 bullet points. The first line is the"
-                                  "first name and last name of the sender:\n\n"
-                                  "{{sender_first_and_last_name}}\n{{summary}}"
-                                  "\n\n- {{bullet_point}}\n- {{bullet_point}}\n"
-                                  "- {{bullet_point}}\n{{has_red_flag}}" + text)
+    def gen_feedback(self, email: Email) -> Feedback:
+        logger.info(f"Generating feedback for {email.subject}")
+        reply = self.agent.submit("Give recommendations on state of employee and if any red flags or manager actions "
+                                  "are needed based on the information provided. Give direct actionable answers. "
+                                  "Provide 5 action items for manager to address red flags. \n\n"
+                                  + email.body)
 
         self.agent.clear()
 
-        name = reply.splitlines()[0].strip()
+        data = json.loads(reply)
+        args = json.loads(data['arguments'])
 
-        feedback = Feedback(name=name, content=reply)
+        # To find the name search the subject line for the name.
+        # We have to check for that name in the EmployeeRepository to find a match.
+        employees = EmployeeRepository().get_all()
+
+        name = None
+        for employee in employees:
+            if employee.name.split(' ')[0] in email.subject:
+                name = employee.name
+                break
+
+        feedback = Feedback(name=name, has_red_flag=args['has_red_flag'], action_items=args['action_items'])
 
         return feedback
 
     def gen_feedbacks(self, emails: list[Email]) -> list[Feedback]:
-        return [self.gen_feedback(email.body) for email in emails]
+        return [self.gen_feedback(email) for email in emails]

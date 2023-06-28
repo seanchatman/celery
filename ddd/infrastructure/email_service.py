@@ -63,7 +63,8 @@ class EmailService:
         self.disconnect_from_email_server()
         return emails
 
-    def parse_emails(self, emails):
+    @staticmethod
+    def parse_emails(emails):
         reports = []
         for mail in emails:
             employee = Employee()
