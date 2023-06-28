@@ -1,18 +1,9 @@
 import os
-from flask import Flask, flash, render_template, redirect, request, send_from_directory
+from flask import Flask, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from celery import Celery
 from celery.utils.log import get_task_logger
-from datetime import datetime
 from dotenv import load_dotenv
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-import imaplib
-import email
-from chat_agent import ChatAgent
-import html2text
-from celery.schedules import crontab
 from flask_cors import CORS
 
 if os.path.exists('/etc/secrets/.env'):
