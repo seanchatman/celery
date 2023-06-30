@@ -29,7 +29,7 @@ def check_email():
 
 app.conf.beat_schedule = {
     'daily-email': {
-        'task': 'tasks.send_email',
+        'task': 'tasks.check_email',
         'schedule': crontab(hour=17, minute=0),
     }
 }

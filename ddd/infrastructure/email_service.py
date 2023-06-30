@@ -10,6 +10,8 @@ from ddd.domain.report import Report
 from ddd.domain.email import Email
 from ddd.domain.employee import Employee
 
+smtp_server = 'smtp.gmail.com'
+imap_server = 'imap.gmail.com'
 
 class EmailService:
     _instance = None
@@ -17,8 +19,7 @@ class EmailService:
     def __new__(cls):
         if cls._instance is None:
             load_dotenv()
-            smtp_server = 'smtp.gmail.com'
-            imap_server = 'imap.gmail.com'
+
             cls._instance = super().__new__(cls)
             cls._instance.server = smtplib.SMTP(smtp_server, 587)
             cls._instance.conn = imaplib.IMAP4_SSL(imap_server)
@@ -28,6 +29,7 @@ class EmailService:
         sender_email = os.getenv('MAIL_USERNAME')
         sender_password = os.getenv('MAIL_PASSWORD')
 
+        self.server.connect(smtp_server, 587)
         self.server.starttls()
         self.server.login(sender_email, sender_password)
         self.server.sendmail(sender_email, message.to, message.as_string())
