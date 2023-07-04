@@ -2,6 +2,7 @@ import imaplib
 import smtplib
 from datetime import datetime, timedelta
 
+import pytz
 from dotenv import load_dotenv
 import os
 import email
@@ -12,6 +13,7 @@ from ddd.domain.employee import Employee
 
 smtp_server = 'smtp.gmail.com'
 imap_server = 'imap.gmail.com'
+
 
 class EmailService:
     _instance = None
@@ -46,14 +48,13 @@ class EmailService:
 
     def get_days_emails(self) -> list[Email]:
         self.connect_to_email_server()
-        # _, data = self.conn.search(None, 'UNSEEN')
-        # Search for all emails received today
-        now = datetime.now()
-        since = (now - timedelta(days=1)).strftime('%d-%b-%Y')
-        # since = (now - timedelta(days=1)).strftime('%d-%b-%Y')
-        before = now.strftime('%d-%b-%Y')
 
-        _, data = self.conn.search(None, 'SINCE', since, 'BEFORE', before)
+        utc_now = datetime.now(pytz.utc)
+        time_delta = timedelta(days=1)
+        utc_since = (utc_now - time_delta).strftime('%d-%b-%Y')
+        utc_before = utc_now.strftime('%d-%b-%Y')
+
+        _, data = self.conn.search(None, 'SINCE', utc_since, 'BEFORE', utc_before)
         email_ids = data[0].split()
         emails = []
         for email_id in email_ids:
