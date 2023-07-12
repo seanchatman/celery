@@ -33,3 +33,6 @@ app.conf.beat_schedule = {
         'schedule': crontab(hour=17, minute=0),
     }
 }
+
+if __name__ == '__main__':
+    check_email()

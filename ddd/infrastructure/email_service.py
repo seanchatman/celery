@@ -1,6 +1,7 @@
 import imaplib
 import smtplib
 from datetime import datetime, timedelta
+from time import sleep
 
 import pytz
 from dotenv import load_dotenv
@@ -26,16 +27,22 @@ class EmailService:
             cls._instance.server = smtplib.SMTP(smtp_server, 587)
             cls._instance.conn = imaplib.IMAP4_SSL(imap_server)
         return cls._instance
-    
+
     def send_email(self, message: Email):
         sender_email = os.getenv('MAIL_USERNAME')
         sender_password = os.getenv('MAIL_PASSWORD')
 
-        self.server.connect(smtp_server, 587)
-        self.server.starttls()
-        self.server.login(sender_email, sender_password)
-        self.server.sendmail(sender_email, message.to, message.as_string())
-        message.sent = True
+        try:
+            self.server.connect(smtp_server, 587)
+            self.server.starttls()
+            self.server.login(sender_email, sender_password)
+            self.server.sendmail(sender_email, message.to, message.as_string())
+            message.sent = True
+        except smtplib.SMTPException as e:
+            print("An error occurred while sending the email:", str(e))
+            # Handle the error or raise an exception if necessary
+
+        # Disconnect even if an exception occurred
         self.server.quit()
 
     def connect_to_email_server(self):
@@ -47,7 +54,24 @@ class EmailService:
             self.conn.logout()
 
     def get_days_emails(self) -> list[Email]:
-        self.connect_to_email_server()
+        # Retry logic with a maximum number of attempts
+        max_attempts = 3
+        attempts = 0
+        while attempts < max_attempts:
+            try:
+                self.conn.login(os.getenv('MAIL_USERNAME'), os.getenv('MAIL_PASSWORD'))
+                self.conn.select('INBOX')
+                break  # Break the loop if successful
+            except imaplib.IMAP4.error as e:
+                print("An error occurred while connecting to the email server:", str(e))
+                attempts += 1
+                if attempts < max_attempts:
+                    print("Retrying in 5 seconds...")
+                    sleep(5)
+                else:
+                    # Reached maximum attempts, handle the error or raise an exception
+                    print("Connection to the email server failed after multiple attempts.")
+                    # Handle the error or raise an exception if necessary
 
         utc_now = datetime.now(pytz.utc)
         time_delta = timedelta(days=1)

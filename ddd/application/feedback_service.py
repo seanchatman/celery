@@ -18,14 +18,18 @@ FEEDBACK_AGENT_PROMPT = """You are a COB Update Feedback AGI that utilizes natur
             targeted feedback to employees, identifying areas where more clarity is needed and offering 
             actionable suggestions for improvement. With its ability to provide real-time feedback and 
             analysis, the COB Update Feedback AGI is an invaluable tool for organizations looking to improve 
-            transparency, communication, and overall employee morale."""
+            transparency, communication, and overall employee morale. Instructions need to go beyond just 
+            checking in. Instructions need to provide resolution and be in three verbose sentences."""
 
 function_schema = {
     "name": "generate_feedback",
     "description": "Identify any red flag issues like poor performance, missing meetings, letting go employees that "
                    "impact the business, giving managers the action items to address red flag concerns "
                    "before they become larger issues. Err on the side of too many red flag issues. It is critical"
-                   "that red flags be identified and addressed immediately with 3 remedial action items.",
+                   "that red flags be identified and addressed immediately with 3 remedial action items."
+                   "The action items should be three verbose sentences of direct and actionable instructions to fully"
+                   "resolve the situation or present an update to the standard operating procedure. 5 action items "
+                   "of 3 sentences each. ",
     "parameters": {
         "type": "object",
         "properties": {
